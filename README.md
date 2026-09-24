@@ -1,6 +1,8 @@
 # Pulse — API Monitoring & Incident Platform
 
-Go, Gin, PostgreSQL, Redis, React, Docker.
+> Ekosistem: [api](https://github.com/RakhaYandra/pulse) · [web](https://github.com/RakhaYandra/pulse-web)
+
+Go, Gin, PostgreSQL, Redis, Docker. Full Clean Architecture.
 
 Self-hosted platform that health-checks APIs on a schedule, stores results,
 opens incidents on configurable failure thresholds, resolves on recovery, and
@@ -13,7 +15,7 @@ dashboard request lifecycle.
 cp .env.example .env   # fill TELEGRAM_* to enable notifications (optional)
 docker compose up -d --build
 curl localhost:8080/health
-cd frontend && npm install && npm run dev  # http://localhost:5173
+# dashboard: https://github.com/RakhaYandra/pulse-web
 ```
 
 Demo login: `demo@pulse.local / demo1234` (register your own for isolation).
@@ -38,9 +40,8 @@ Demo login: `demo@pulse.local / demo1234` (register your own for isolation).
 
 ## Layout
 
-`backend/` (Go: auth, monitor, checker, incident, worker, scheduler, notify, read)
-`frontend/` (React, no router — state views) · `qa/` (Newman + Playwright)
-`docs/` (BRD, PRD, Architecture, ADRs)
+`backend/` (Go, Clean Architecture: domain/usecase/infrastructure/delivery)
+`qa/` (Newman + Playwright) · `docs/` (BRD, PRD, Architecture, ADRs)
 
 ## Future (post-MVP)
 

@@ -2,6 +2,6 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './tests',
   timeout: 30000,
-  use: { baseURL: 'http://localhost:5173', headless: true },
+  use: { baseURL: process.env.BASE_URL || 'http://localhost:5173', headless: true },
   webServer: undefined, // frontend + api started separately via docker compose / npm run dev
 });
