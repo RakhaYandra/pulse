@@ -30,8 +30,10 @@ services:
     command: ["-mode=api"]
     ports:
       - "8080:8080"
+      - "9101:9100"
     environment:
       PORT: "8080"
+      METRICS_PORT: "9100"
       DATABASE_URL: postgres://pulse:pulsepass@postgres:5432/pulse?sslmode=disable
       REDIS_ADDR: redis:6379
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
@@ -46,7 +48,10 @@ services:
   scheduler:
     build: ./backend
     command: ["-mode=scheduler"]
+    ports:
+      - "9105:9100"
     environment:
+      METRICS_PORT: "9100"
       DATABASE_URL: postgres://pulse:pulsepass@postgres:5432/pulse?sslmode=disable
       REDIS_ADDR: redis:6379
     depends_on:
@@ -55,10 +60,15 @@ services:
       redis:
         condition: service_healthy
 
-  worker:
+  # Explicit worker instances (fixed metrics ports) instead of replicas,
+  # so each process's /metrics is scrapable. Bench starts/stops subsets.
+  worker-1:
     build: ./backend
     command: ["-mode=worker"]
+    ports:
+      - "9102:9100"
     environment:
+      METRICS_PORT: "9100"
       DATABASE_URL: postgres://pulse:pulsepass@postgres:5432/pulse?sslmode=disable
       REDIS_ADDR: redis:6379
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
@@ -68,8 +78,71 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    deploy:
-      replicas: 2
+
+  worker-2:
+    build: ./backend
+    command: ["-mode=worker"]
+    ports:
+      - "9103:9100"
+    environment:
+      METRICS_PORT: "9100"
+      DATABASE_URL: postgres://pulse:pulsepass@postgres:5432/pulse?sslmode=disable
+      REDIS_ADDR: redis:6379
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-3:
+    build: ./backend
+    command: ["-mode=worker"]
+    ports:
+      - "9104:9100"
+    environment:
+      METRICS_PORT: "9100"
+      DATABASE_URL: postgres://pulse:pulsepass@postgres:5432/pulse?sslmode=disable
+      REDIS_ADDR: redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-4:
+    build: ./backend
+    command: ["-mode=worker"]
+    ports:
+      - "9106:9100"
+    environment:
+      METRICS_PORT: "9100"
+      DATABASE_URL: postgres://pulse:pulsepass@postgres:5432/pulse?sslmode=disable
+      REDIS_ADDR: redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Deterministic stub target for benchmarks. Bench-only profile:
+  #   docker compose --profile bench up -d stub
+  stub:
+    build:
+      context: ./bench/stub
+      dockerfile_inline: |
+        FROM golang:1.27-alpine AS b
+        WORKDIR /s
+        COPY main.go .
+        RUN CGO_ENABLED=0 go build -o stub main.go
+        FROM alpine:3.20
+        COPY --from=b /s/stub /stub
+        EXPOSE 8099
+        ENTRYPOINT ["/stub"]
+    profiles: [bench]
+    ports:
+      - "8099:8099"
 
 volumes:
   pgdata:
