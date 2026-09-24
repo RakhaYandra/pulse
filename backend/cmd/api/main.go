@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"github.com/RakhaYandra/pulse/internal/auth"
 	"github.com/RakhaYandra/pulse/internal/db"
 	"github.com/RakhaYandra/pulse/internal/monitor"
@@ -61,11 +62,21 @@ func main() {
 		v1 := r.Group("/api/v1")
 		{
 			v1.GET("/health", func(c *gin.Context) {
-				if err := pool.Ping(); err != nil {
-					c.JSON(http.StatusServiceUnavailable, gin.H{"status": "unhealthy", "database": "down"})
-					return
+				dbOK := pool.Ping() == nil
+				redisAddr := os.Getenv("REDIS_ADDR")
+				if redisAddr == "" {
+					redisAddr = "localhost:6379"
 				}
-				c.JSON(http.StatusOK, gin.H{"status": "healthy", "database": "healthy", "redis": "todo"})
+				rdb := redis.NewClient(&redis.Options{Addr: redisAddr})
+				redisOK := rdb.Ping(c.Request.Context()).Err() == nil
+				rdb.Close()
+				status := http.StatusOK
+				if !dbOK || !redisOK {
+					status = http.StatusServiceUnavailable
+				}
+				c.JSON(status, gin.H{"status": map[bool]string{true: "healthy", false: "unhealthy"}[dbOK && redisOK],
+					"database": map[bool]string{true: "healthy", false: "down"}[dbOK],
+					"redis":    map[bool]string{true: "healthy", false: "down"}[redisOK]})
 			})
 			v1.POST("/auth/register", ah.Register)
 			v1.POST("/auth/login", ah.Login)
