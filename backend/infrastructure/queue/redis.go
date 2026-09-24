@@ -27,3 +27,7 @@ func (q RedisQueue) Dequeue(ctx context.Context, timeout time.Duration) (string,
 	}
 	return vals[1], nil
 }
+
+func (q RedisQueue) Depth(ctx context.Context) (int64, error) {
+	return q.RDB.LLen(ctx, Key).Result()
+}

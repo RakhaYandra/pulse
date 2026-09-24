@@ -71,4 +71,6 @@ type JobQueue interface {
 	Enqueue(ctx context.Context, monitorID string) error
 	// Dequeue blocks up to timeout; returns "" with nil error on timeout.
 	Dequeue(ctx context.Context, timeout time.Duration) (string, error)
+	// Depth returns pending jobs (Redis LLEN). Used for metrics only.
+	Depth(ctx context.Context) (int64, error)
 }

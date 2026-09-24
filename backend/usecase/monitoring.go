@@ -15,11 +15,18 @@ type MonitoringService struct {
 	Checker   Checker
 }
 
+// Outcome carries what delivery needs for metrics + notify without
+// re-querying. Transition is nil when state doesn't flip.
+type Outcome struct {
+	Result     domain.CheckResult
+	Transition *domain.Transition
+}
+
 // ProcessCheck records one check result, updates monitor status, and evaluates
-// incident transitions. Returns nil transition when state doesn't flip.
+// incident transitions.
 // ErrNotFound from ActiveMonitor means paused/deleted after enqueue → skip
 // silently (nil, nil), preserving old worker behavior.
-func (s MonitoringService) ProcessCheck(ctx context.Context, monitorID string) (*domain.Transition, error) {
+func (s MonitoringService) ProcessCheck(ctx context.Context, monitorID string) (*Outcome, error) {
 	mon, err := s.Monitors.ActiveMonitor(ctx, monitorID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
@@ -28,6 +35,7 @@ func (s MonitoringService) ProcessCheck(ctx context.Context, monitorID string) (
 		return nil, err
 	}
 	res := s.Checker.Check(mon.URL, mon.TimeoutSeconds)
+	out := &Outcome{Result: res}
 	if err := s.Checks.Append(ctx, monitorID, res); err != nil {
 		return nil, err
 	}
@@ -51,17 +59,19 @@ func (s MonitoringService) ProcessCheck(ctx context.Context, monitorID string) (
 		if _, err := s.Incidents.Open(ctx, monitorID, reason, fail); err != nil {
 			return nil, err
 		}
-		return &domain.Transition{Type: domain.TransitionOpened, MonitorID: monitorID,
-			MonitorName: mon.Name, MonitorURL: mon.URL, FailureCount: fail, Detail: detail}, nil
+		out.Transition = &domain.Transition{Type: domain.TransitionOpened, MonitorID: monitorID,
+			MonitorName: mon.Name, MonitorURL: mon.URL, FailureCount: fail, Detail: detail}
+		return out, nil
 	}
 	if res.Success() && ok >= mon.RecoveryThreshold && hasOpen {
 		if err := s.Incidents.Resolve(ctx, open.ID, ok); err != nil {
 			return nil, err
 		}
-		return &domain.Transition{Type: domain.TransitionResolved, MonitorID: monitorID,
-			MonitorName: mon.Name, MonitorURL: mon.URL, SuccessCount: ok}, nil
+		out.Transition = &domain.Transition{Type: domain.TransitionResolved, MonitorID: monitorID,
+			MonitorName: mon.Name, MonitorURL: mon.URL, SuccessCount: ok}
+		return out, nil
 	}
-	return nil, nil
+	return out, nil
 }
 
 func (s MonitoringService) openIncident(ctx context.Context, monitorID string) (domain.Incident, bool) {

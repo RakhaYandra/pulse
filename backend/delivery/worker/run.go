@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/RakhaYandra/pulse/domain"
+	"github.com/RakhaYandra/pulse/infrastructure/metrics"
 	"github.com/RakhaYandra/pulse/pkg/logger"
 	"github.com/RakhaYandra/pulse/usecase"
 )
@@ -17,6 +19,20 @@ type Runner struct {
 
 func (r Runner) Run(ctx context.Context) {
 	r.Log.Info("worker waiting for jobs")
+	depthTick := time.NewTicker(5 * time.Second)
+	defer depthTick.Stop()
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-depthTick.C:
+				if n, err := r.Queue.Depth(ctx); err == nil {
+					metrics.QueueDepth.Set(float64(n))
+				}
+			}
+		}
+	}()
 	for {
 		select {
 		case <-ctx.Done():
@@ -25,6 +41,7 @@ func (r Runner) Run(ctx context.Context) {
 		}
 		monitorID, err := r.Queue.Dequeue(ctx, 30*time.Second)
 		if err != nil {
+			metrics.ProcessErrors.WithLabelValues("dequeue").Inc()
 			r.Log.Error("queue pop failed", "err", err)
 			time.Sleep(3 * time.Second)
 			continue
@@ -36,16 +53,29 @@ func (r Runner) Run(ctx context.Context) {
 		func() {
 			defer func() {
 				if rec := recover(); rec != nil {
+					metrics.ProcessErrors.WithLabelValues("panic").Inc()
 					r.Log.Error("job panic recovered", "monitor", monitorID)
 				}
 			}()
-			tr, err := r.Monitoring.ProcessCheck(ctx, monitorID)
+			metrics.JobsInflight.Inc()
+			defer metrics.JobsInflight.Dec()
+			start := time.Now()
+			oc, err := r.Monitoring.ProcessCheck(ctx, monitorID)
+			metrics.ProcessDuration.Observe(time.Since(start).Seconds())
 			if err != nil {
+				metrics.ProcessErrors.WithLabelValues("process").Inc()
 				r.Log.Error("process check failed", "monitor", monitorID, "err", err)
 				return
 			}
-			if tr != nil {
+			metrics.ChecksTotal.WithLabelValues(string(oc.Result.Status)).Inc()
+			metrics.CheckDuration.Observe(float64(oc.Result.ResponseTimeMs) / 1000)
+			if tr := oc.Transition; tr != nil {
 				r.Log.Info("incident transition", "monitor", monitorID, "type", string(tr.Type))
+				if tr.Type == domain.TransitionOpened {
+					metrics.IncidentsOpened.Inc()
+				} else {
+					metrics.IncidentsResolved.Inc()
+				}
 				r.Notifier.Notify(*tr)
 			}
 		}()

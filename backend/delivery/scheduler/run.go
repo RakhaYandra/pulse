@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/RakhaYandra/pulse/infrastructure/metrics"
 	"github.com/RakhaYandra/pulse/pkg/logger"
 	"github.com/RakhaYandra/pulse/usecase"
 )
@@ -34,6 +35,7 @@ func (r Runner) enqueue(ctx context.Context) {
 		r.Log.Error("due scan failed", "err", err)
 		return
 	}
+	metrics.SchedulerDue.Add(float64(len(due)))
 	n := 0
 	for _, m := range due {
 		if err := r.Queue.Enqueue(ctx, m.ID); err != nil {
@@ -42,6 +44,7 @@ func (r Runner) enqueue(ctx context.Context) {
 		}
 		n++
 	}
+	metrics.SchedulerEnqueued.Add(float64(n))
 	if n > 0 {
 		r.Log.Info("enqueued jobs", "count", strconv.Itoa(n))
 	}

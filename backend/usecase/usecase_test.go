@@ -107,16 +107,16 @@ func TestProcessCheckOpensIncident(t *testing.T) {
 	mr, cr, ir := &fakeMonitorRepo{m: testMonitor()}, &fakeCheckRepo{}, &fakeIncidentRepo{}
 	svc := MonitoringService{Monitors: mr, Checks: cr, Incidents: ir,
 		Checker: &scriptChecker{results: []domain.CheckResult{down(500), down(500), down(500)}}}
-	var tr *domain.Transition
+	var oc *Outcome
 	var err error
 	for i := 0; i < 3; i++ {
-		tr, err = svc.ProcessCheck(context.Background(), "m1")
+		oc, err = svc.ProcessCheck(context.Background(), "m1")
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	if tr == nil || tr.Type != domain.TransitionOpened {
-		t.Fatalf("want OPENED transition, got %+v", tr)
+	if oc == nil || oc.Transition == nil || oc.Transition.Type != domain.TransitionOpened {
+		t.Fatalf("want OPENED transition, got %+v", oc)
 	}
 	if ir.opened != 1 {
 		t.Fatalf("want 1 incident opened, got %d", ir.opened)
@@ -132,16 +132,16 @@ func TestProcessCheckResolvesIncident(t *testing.T) {
 	}
 	svc := MonitoringService{Monitors: mr, Checks: cr, Incidents: ir,
 		Checker: &scriptChecker{results: []domain.CheckResult{up(), up()}}}
-	var tr *domain.Transition
+	var oc *Outcome
 	var err error
 	for i := 0; i < 2; i++ {
-		tr, err = svc.ProcessCheck(context.Background(), "m1")
+		oc, err = svc.ProcessCheck(context.Background(), "m1")
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	if tr == nil || tr.Type != domain.TransitionResolved {
-		t.Fatalf("want RESOLVED transition, got %+v", tr)
+	if oc == nil || oc.Transition == nil || oc.Transition.Type != domain.TransitionResolved {
+		t.Fatalf("want RESOLVED transition, got %+v", oc)
 	}
 	if ir.open.RecoveryCount != 2 {
 		t.Fatalf("want recovery count 2, got %d", ir.open.RecoveryCount)
@@ -154,9 +154,9 @@ func TestProcessCheckSkipsInactive(t *testing.T) {
 	mr := &fakeMonitorRepo{m: m}
 	svc := MonitoringService{Monitors: mr, Checks: &fakeCheckRepo{}, Incidents: &fakeIncidentRepo{},
 		Checker: &scriptChecker{results: []domain.CheckResult{down(500)}}}
-	tr, err := svc.ProcessCheck(context.Background(), "m1")
-	if err != nil || tr != nil {
-		t.Fatalf("want silent skip, got %+v, %v", tr, err)
+	oc, err := svc.ProcessCheck(context.Background(), "m1")
+	if err != nil || oc != nil {
+		t.Fatalf("want silent skip, got %+v, %v", oc, err)
 	}
 }
 
