@@ -48,6 +48,11 @@ var (
 		Help: "Jobs successfully enqueued.",
 	})
 
+	SchedulerSkipped = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "scheduler_skipped_total",
+		Help: "Due monitors skipped — already queued (dedup).",
+	})
+
 	IncidentsOpened = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "incidents_opened_total",
 		Help: "Incidents opened by workers.",

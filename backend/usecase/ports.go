@@ -68,7 +68,12 @@ type Notifier interface {
 }
 
 type JobQueue interface {
-	Enqueue(ctx context.Context, monitorID string) error
+	// Enqueue queues one job unless an unexpired claim exists (dedup).
+	// Returns true when the job was actually queued.
+	Enqueue(ctx context.Context, monitorID string, ttl time.Duration) (bool, error)
+	// Release drops the dedup claim after a job finishes. TTL remains as
+	// crash safety net — a crashed job is re-queued once the claim expires.
+	Release(ctx context.Context, monitorID string) error
 	// Dequeue blocks up to timeout; returns "" with nil error on timeout.
 	Dequeue(ctx context.Context, timeout time.Duration) (string, error)
 	// Depth returns pending jobs (Redis LLEN). Used for metrics only.
