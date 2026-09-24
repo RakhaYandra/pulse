@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"os"
 	"strconv"
 	"time"
 
@@ -17,7 +18,7 @@ type Runner struct {
 }
 
 func (r Runner) Run(ctx context.Context) {
-	tick := time.NewTicker(15 * time.Second)
+	tick := time.NewTicker(tickInterval())
 	defer tick.Stop()
 	for {
 		r.enqueue(ctx)
@@ -27,6 +28,17 @@ func (r Runner) Run(ctx context.Context) {
 		case <-tick.C:
 		}
 	}
+}
+
+// tickInterval bounds schedule granularity. Lower = tighter cadence at the
+// cost of more due-scans (cheap indexed query). Benchmarked at 10s.
+func tickInterval() time.Duration {
+	if v := os.Getenv("SCHED_TICK_SECONDS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= 60 {
+			return time.Duration(n) * time.Second
+		}
+	}
+	return 10 * time.Second
 }
 
 func (r Runner) enqueue(ctx context.Context) {

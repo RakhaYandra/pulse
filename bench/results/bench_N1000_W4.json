@@ -1,0 +1,14 @@
+{
+ "N": 1000,
+ "workers": 4,
+ "elapsed_s": 570.2,
+ "checks_total": 5293,
+ "checks_per_s": 9.28,
+ "fail_ratio": 0.1,
+ "queue_depth_max": 0,
+ "inflight_max": 41,
+ "overdue_monitors": 0,
+ "ok_monitors_with_incidents": 0,
+ "timeout_monitors_open": 50,
+ "scheduler_enqueued": 6986
+}

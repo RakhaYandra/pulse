@@ -2,15 +2,13 @@
  "N": 100,
  "workers": 2,
  "elapsed_s": 570.1,
- "checks_total": 1150,
- "checks_per_s": 2.02,
- "fail_ratio": 0.112,
- "process_p50_s": 0.05,
- "process_p95_s": 0.5,
- "queue_depth_max": 786,
- "inflight_max": 2,
- "overdue_monitors": 34,
+ "checks_total": 737,
+ "checks_per_s": 1.29,
+ "fail_ratio": 0.095,
+ "queue_depth_max": 0,
+ "inflight_max": 5,
+ "overdue_monitors": 0,
  "ok_monitors_with_incidents": 0,
  "timeout_monitors_open": 5,
- "scheduler_enqueued": 0
+ "scheduler_enqueued": 732
 }
