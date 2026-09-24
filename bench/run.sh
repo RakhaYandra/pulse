@@ -33,9 +33,9 @@ docker compose restart scheduler >/dev/null
 sleep 5
 
 echo "--- sample metrics every 30s for ${D}s"
-PORTS=""
+PORTS="9105"
 for i in $(seq 1 "$W"); do PORTS="$PORTS $((9101 + i))"; done
-# worker-N -> 9101+N ; api=9101
+# worker-N -> 9101+N ; scheduler=9105 ; api=9101
 python3 - "bench/results/samples_N${N}_W${W}.jsonl" "$D" $PORTS <<'EOF'
 import json, sys, time, urllib.request
 out, dur = sys.argv[1], int(sys.argv[2])
