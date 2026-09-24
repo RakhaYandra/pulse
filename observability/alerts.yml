@@ -1,0 +1,17 @@
+groups:
+  - name: pulse
+    rules:
+      - alert: PulseQueueBacklog
+        expr: max(queue_depth) > 500
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pulse queue backlog above 500 jobs"
+      - alert: PulseProcessErrors
+        expr: sum by (job) (rate(process_check_errors_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pulse process errors above 0.1/s"

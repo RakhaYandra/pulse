@@ -20,15 +20,42 @@ curl localhost:8080/health
 
 Demo login: `demo@pulse.local / demo1234` (register your own for isolation).
 
-## Verification (all green, 2026-09-24)
+## Verification (all green)
 
 | Check | Result |
 |---|---|
 | Engine E2E (real) | 404-monitor → OPEN after 2 fails → RESOLVED after recovery, dashboard correct |
 | Newman | 20/20 (`qa/collection.json`) |
-| Go unit | 4/4 (`checker`: UP/DOWN/TIMEOUT/ERROR) |
-| Playwright e2e | 5/5 (`qa/e2e`) |
+| Go unit | domain + usecase (fake repos) + checker |
+| Playwright e2e | 5/5 (`qa/e2e`, black-box) |
 | Avg API latency (Newman) | ~10ms local |
+
+## Benchmark (measured, `docs/BENCHMARK.md`)
+
+Deterministic stub (70% ok / 15% slow / 10% flaky / 5% timeout), 60s interval,
+16 CPU / 14 GB. Post-hardening (dedup + worker pool + 10s tick):
+
+| Monitors | Workers | checks/s | peak burst | queue max | overdue | false incidents | timeouts detected |
+|---|---|---|---|---|---|---|---|
+| 100 | 2 | 1.29 | 3.4/s | 0 | 0 | 0 | 5/5 |
+| 500 | 2 | 6.20 | ~7/s | 0 | 0 | 0 | 25/25 |
+| 1000 | 4 | 9.28 | 28/s | 0 | 0 | 0 | 50/50 |
+
+Honest note: peak drain exceeds required rate at every scale, but wave
+phasing stretches effective cadence ~25-44% (synchronized seeding + drain
+spread + tick quantization). Queue stays bounded; incident behavior exact.
+
+## Observability
+
+Per-process `/metrics` (api :9101, workers :9102-04/06, scheduler :9105),
+Prometheus + Grafana + 2 alerts via `docker-compose.observability.yml`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d prometheus grafana
+# Grafana http://localhost:3000 (admin/pulse), dashboard "Pulse"
+```
+
+![Grafana dashboard](docs/grafana.png)
 
 ## Key engineering points
 
@@ -43,7 +70,6 @@ Demo login: `demo@pulse.local / demo1234` (register your own for isolation).
 `backend/` (Go, Clean Architecture: domain/usecase/infrastructure/delivery)
 `qa/` (Newman + Playwright) · `docs/` (BRD, PRD, Architecture, ADRs)
 
-## Future (post-MVP)
+## Future
 
-Concurrency benchmark 100→1000 monitors, `/metrics` + Prometheus/Grafana,
-MTTR/SLA reports, self-monitoring, single-VPS deploy.
+MTTR/SLA reports, self-monitoring, single-VPS deploy, `next_run_at` scheduling.
