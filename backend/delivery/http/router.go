@@ -32,7 +32,13 @@ func corsOrigins() map[string]bool {
 	return out
 }
 
-func NewRouter(h Handler, health HealthChecker) *gin.Engine {
+// RateLimit wires a budget backend (e.g. infrastructure/redislimit)
+// into the route classes. Kept explicit so main.go owns the wiring.
+type RateLimit struct {
+	Allow AllowFunc
+}
+
+func NewRouter(h Handler, health HealthChecker, rl RateLimit) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Recovery())
 	allowedOrigins := corsOrigins()
@@ -57,8 +63,8 @@ func NewRouter(h Handler, health HealthChecker) *gin.Engine {
 	})
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	v1 := r.Group("/api/v1")
-	v1.Use(NewLimiter(100.0/60, 100).Middleware())      // 100 req/min/IP global
-	authLimiter := NewLimiter(10.0/60, 10).Middleware() // 10 req/min/IP auth
+	v1.Use(Limiter{Allow: rl.Allow, Class: ClassAPI, Limit: LimitAPI}.Middleware())
+	authLimiter := Limiter{Allow: rl.Allow, Class: ClassAuth, Limit: LimitAuth}.Middleware()
 	{
 		v1.GET("/health", func(c *gin.Context) {
 			dbOK := health.DB(c.Request.Context()) == nil

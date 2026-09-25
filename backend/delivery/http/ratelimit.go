@@ -1,68 +1,31 @@
 package http
 
 import (
+	"context"
 	"net"
 	"net/http"
-	"sync"
-	"time"
+	"os"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/time/rate"
 )
 
-// Limiter is per-IP token-bucket rate limiting middleware.
-// In-memory: with multiple api replicas each enforces its own budget
-// (documented limitation; use a Redis bucket for exact global limits).
+// AllowFunc checks a rate budget; implemented by infrastructure/redislimit.
+// Error forces fail-open (allow) so Redis outages don't kill the API.
+type AllowFunc func(ctx context.Context, class, ip string) (bool, error)
+
+// Limiter enforces per-IP, per-class budgets via an injected backend.
 type Limiter struct {
-	mu       sync.Mutex
-	visitors map[string]*rate.Limiter
-	r        rate.Limit
-	burst    int
-	ttl      time.Duration
-	lastSeen map[string]time.Time
-}
-
-func NewLimiter(rps float64, burst int) *Limiter {
-	l := &Limiter{
-		visitors: map[string]*rate.Limiter{},
-		r:        rate.Limit(rps),
-		burst:    burst,
-		lastSeen: map[string]time.Time{},
-	}
-	go l.reap()
-	return l
-}
-
-func (l *Limiter) get(ip string) *rate.Limiter {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	v, ok := l.visitors[ip]
-	if !ok {
-		v = rate.NewLimiter(l.r, l.burst)
-		l.visitors[ip] = v
-	}
-	l.lastSeen[ip] = time.Now()
-	return v
-}
-
-// reap drops idle buckets every minute to bound memory.
-func (l *Limiter) reap() {
-	for range time.Tick(time.Minute) {
-		cutoff := time.Now().Add(-10 * time.Minute)
-		l.mu.Lock()
-		for ip, t := range l.lastSeen {
-			if t.Before(cutoff) {
-				delete(l.visitors, ip)
-				delete(l.lastSeen, ip)
-			}
-		}
-		l.mu.Unlock()
-	}
+	Allow AllowFunc
+	Class string
+	Limit int
 }
 
 func clientIP(c *gin.Context) string {
-	if h := c.GetHeader("X-Forwarded-For"); h != "" {
-		return h
+	// X-Forwarded-For is spoofable; trust it only behind a known proxy.
+	if os.Getenv("TRUST_PROXY") == "1" {
+		if h := c.GetHeader("X-Forwarded-For"); h != "" {
+			return h
+		}
 	}
 	host, _, err := net.SplitHostPort(c.Request.RemoteAddr)
 	if err != nil {
@@ -72,13 +35,25 @@ func clientIP(c *gin.Context) string {
 }
 
 // Middleware rejects over-budget requests with 429 + Retry-After.
-func (l *Limiter) Middleware() gin.HandlerFunc {
+func (l Limiter) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !l.get(clientIP(c)).Allow() {
-			c.Header("Retry-After", "60")
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
+		ok, err := l.Allow(c.Request.Context(), l.Class, clientIP(c))
+		if err != nil || ok {
+			c.Next()
 			return
 		}
-		c.Next()
+		c.Header("Retry-After", "60")
+		c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
 	}
 }
+
+// Classes and budgets (requests/minute/IP).
+const (
+	ClassAuth = "auth"
+	ClassAPI  = "api"
+)
+
+const (
+	LimitAuth = 10
+	LimitAPI  = 100
+)
