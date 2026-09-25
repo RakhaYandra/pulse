@@ -34,3 +34,13 @@ docker run --rm -v pulse_pgdata:/src -v "$PWD":/dst alpine tar -czf /dst/pgdata.
 
 Point-in-time recovery, off-site copies, PG replicas, Redis Sentinel —
 all out of scope for self-hosted single node (see docs).
+
+## Housekeeping cadence
+
+Run `bench/clean.sql` (+ redis FLUSHDB) after every bench run and e2e batch.
+Both seed throwaway monitors (`bench-%`, `E2E %`) that would otherwise pollute
+metrics, incidents, and backups.
+```bash
+docker compose exec -T postgres psql -U pulse -d pulse -f - < bench/clean.sql
+docker compose exec -T redis redis-cli FLUSHDB
+```
