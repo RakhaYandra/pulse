@@ -21,14 +21,51 @@ import (
 //     recorded as DOWN like any other unexpected status
 //   - the dialed IP is the resolved one (TOCTOU-safe); TLS ServerName stays
 //     the original hostname
+//
+// The underlying Transport is shared across checks (connection reuse); only
+// per-check parameters (timeout, allowlist) travel via request context.
 type Checker struct {
 	Allow map[string]bool
 	// Resolve is swappable in tests. Defaults to the system resolver.
 	Resolve func(host string) ([]net.IP, error)
 }
 
+type ctxKey struct{}
+
+// dialParams travel via request context into the shared Transport dialer.
+type dialParams struct {
+	timeout time.Duration
+	allow   map[string]bool
+	resolve func(host string) ([]net.IP, error)
+}
+
+var sharedTransport = &http.Transport{
+	MaxIdleConns:        100,
+	MaxIdleConnsPerHost: 10,
+	IdleConnTimeout:     90 * time.Second,
+	DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+		p, _ := ctx.Value(ctxKey{}).(dialParams)
+		host, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			return nil, err
+		}
+		ip, err := pickIP(host, p.resolve, p.allow)
+		if err != nil {
+			return nil, err
+		}
+		return (&net.Dialer{Timeout: p.timeout}).DialContext(ctx, network, net.JoinHostPort(ip.String(), port))
+	},
+}
+
+var sharedClient = &http.Client{
+	Transport:     sharedTransport,
+	CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
+}
+
 // Check executes one monitoring check: up to 3 HTTP attempts (1s,2s backoff)
 // but records a single CheckResult. UP only on 2xx (ADR-003).
+// ResponseTimeMs is wall-clock from first attempt start (includes backoff),
+// i.e. the latency an observer actually experiences.
 func (c Checker) Check(targetURL string, timeoutSec int) domain.CheckResult {
 	u, err := url.ParseRequestURI(targetURL)
 	if err != nil {
@@ -44,38 +81,29 @@ func (c Checker) Check(targetURL string, timeoutSec int) domain.CheckResult {
 			return net.DefaultResolver.LookupIP(context.Background(), "ip", host)
 		}
 	}
-	transport := &http.Transport{
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			host, port, err := net.SplitHostPort(addr)
-			if err != nil {
-				return nil, err
-			}
-			ip, err := pickIP(host, resolve, c.Allow)
-			if err != nil {
-				return nil, err
-			}
-			return (&net.Dialer{Timeout: time.Duration(timeoutSec) * time.Second}).DialContext(ctx, network, net.JoinHostPort(ip.String(), port))
-		},
-		TLSHandshakeTimeout: time.Duration(timeoutSec) * time.Second,
-	}
-	client := &http.Client{
-		Timeout:       time.Duration(timeoutSec) * time.Second,
-		Transport:     transport,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
-	}
+	timeout := time.Duration(timeoutSec) * time.Second
+	start := time.Now()
+	elapsed := func() int { return int(time.Since(start).Milliseconds()) }
 	var lastErr string
 	for attempt := 1; attempt <= 3; attempt++ {
-		start := time.Now()
-		resp, err := client.Get(targetURL)
-		elapsed := int(time.Since(start).Milliseconds())
+		ctx, cancel := context.WithTimeout(context.WithValue(context.Background(), ctxKey{}, dialParams{
+			timeout: timeout, allow: c.Allow, resolve: resolve,
+		}), timeout)
+		req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
+		if err != nil {
+			cancel()
+			return domain.CheckResult{Status: domain.CheckError, ErrorMessage: "invalid request"}
+		}
+		resp, err := sharedClient.Do(req)
+		cancel()
 		if err != nil {
 			lastErr = err.Error()
 			if isTimeout(err) {
 				if attempt == 3 {
-					return domain.CheckResult{Status: domain.CheckTimeout, ResponseTimeMs: elapsed, ErrorMessage: lastErr}
+					return domain.CheckResult{Status: domain.CheckTimeout, ResponseTimeMs: elapsed(), ErrorMessage: lastErr}
 				}
 			} else if attempt == 3 {
-				return domain.CheckResult{Status: domain.CheckError, ResponseTimeMs: elapsed, ErrorMessage: lastErr}
+				return domain.CheckResult{Status: domain.CheckError, ResponseTimeMs: elapsed(), ErrorMessage: lastErr}
 			}
 			time.Sleep(time.Duration(attempt) * time.Second)
 			continue
@@ -83,9 +111,9 @@ func (c Checker) Check(targetURL string, timeoutSec int) domain.CheckResult {
 		io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			return domain.CheckResult{Status: domain.CheckUp, StatusCode: resp.StatusCode, ResponseTimeMs: elapsed}
+			return domain.CheckResult{Status: domain.CheckUp, StatusCode: resp.StatusCode, ResponseTimeMs: elapsed()}
 		}
-		return domain.CheckResult{Status: domain.CheckDown, StatusCode: resp.StatusCode, ResponseTimeMs: elapsed,
+		return domain.CheckResult{Status: domain.CheckDown, StatusCode: resp.StatusCode, ResponseTimeMs: elapsed(),
 			ErrorMessage: fmt.Sprintf("unexpected status %d", resp.StatusCode)}
 	}
 	return domain.CheckResult{Status: domain.CheckError, ErrorMessage: lastErr}

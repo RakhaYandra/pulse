@@ -32,8 +32,18 @@ type MonitorInput struct {
 	RecoveryThreshold int
 }
 
-// normalize applies creation defaults. Known quirk (preserved): update is
-// full-replace, so omitted thresholds reset to defaults.
+// MonitorPatch carries optional update fields. Nil = keep existing value
+// (true PATCH semantics; omitted fields are never reset to defaults).
+type MonitorPatch struct {
+	Name              *string
+	URL               *string
+	IntervalSeconds   *int
+	TimeoutSeconds    *int
+	FailureThreshold  *int
+	RecoveryThreshold *int
+}
+
+// normalize applies creation defaults.
 func (in *MonitorInput) normalize() {
 	if in.IntervalSeconds == 0 {
 		in.IntervalSeconds = 300
@@ -106,18 +116,29 @@ func (s MonitorService) Get(ctx context.Context, id, userID string) (MonitorDTO,
 	return toMonitorDTO(m), nil
 }
 
-func (s MonitorService) Update(ctx context.Context, id, userID string, in MonitorInput) (MonitorDTO, error) {
-	in.normalize()
+func (s MonitorService) Update(ctx context.Context, id, userID string, p MonitorPatch) (MonitorDTO, error) {
 	existing, err := s.Monitors.ByID(ctx, id, userID)
 	if err != nil {
 		return MonitorDTO{}, err
 	}
-	existing.Name = in.Name
-	existing.URL = in.URL
-	existing.IntervalSeconds = in.IntervalSeconds
-	existing.TimeoutSeconds = in.TimeoutSeconds
-	existing.FailureThreshold = in.FailureThreshold
-	existing.RecoveryThreshold = in.RecoveryThreshold
+	if p.Name != nil {
+		existing.Name = strings.TrimSpace(*p.Name)
+	}
+	if p.URL != nil {
+		existing.URL = strings.TrimSpace(*p.URL)
+	}
+	if p.IntervalSeconds != nil {
+		existing.IntervalSeconds = *p.IntervalSeconds
+	}
+	if p.TimeoutSeconds != nil {
+		existing.TimeoutSeconds = *p.TimeoutSeconds
+	}
+	if p.FailureThreshold != nil {
+		existing.FailureThreshold = *p.FailureThreshold
+	}
+	if p.RecoveryThreshold != nil {
+		existing.RecoveryThreshold = *p.RecoveryThreshold
+	}
 	if err := existing.Validate(); err != nil {
 		return MonitorDTO{}, err
 	}

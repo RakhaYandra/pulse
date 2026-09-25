@@ -121,12 +121,16 @@ func (h Handler) GetMonitor(c *gin.Context) {
 }
 
 func (h Handler) UpdateMonitor(c *gin.Context) {
-	var in monitorRequest
+	var in monitorPatchRequest
 	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid body"})
 		return
 	}
-	m, err := h.Monitors.Update(c.Request.Context(), c.Param("id"), uid(c), toInput(in))
+	m, err := h.Monitors.Update(c.Request.Context(), c.Param("id"), uid(c), usecase.MonitorPatch{
+		Name: in.Name, URL: in.URL,
+		IntervalSeconds: in.IntervalSeconds, TimeoutSeconds: in.TimeoutSeconds,
+		FailureThreshold: in.FailureThreshold, RecoveryThreshold: in.RecoveryThreshold,
+	})
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			writeNotFound(c, "monitor")

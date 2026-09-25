@@ -31,6 +31,16 @@ type monitorRequest struct {
 	RecoveryThreshold int    `json:"recovery_threshold"`
 }
 
+// monitorPatchRequest mirrors MonitorPatch: absent keys stay nil (keep value).
+type monitorPatchRequest struct {
+	Name              *string `json:"name"`
+	URL               *string `json:"url"`
+	IntervalSeconds   *int    `json:"interval_seconds"`
+	TimeoutSeconds    *int    `json:"timeout_seconds"`
+	FailureThreshold  *int    `json:"failure_threshold"`
+	RecoveryThreshold *int    `json:"recovery_threshold"`
+}
+
 type monitorResponse struct {
 	ID                string  `json:"id"`
 	Name              string  `json:"name"`

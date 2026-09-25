@@ -201,3 +201,25 @@ type fixedToken struct{}
 
 func (fixedToken) Issue(uid string) (string, error) { return "tok-" + uid, nil }
 func (fixedToken) Parse(tok string) (string, error) { return "u1", nil }
+
+func strptr(s string) *string { return &s }
+
+func TestMonitorPartialUpdateKeepsThresholds(t *testing.T) {
+	repo := &fakeMonitorRepo{m: domain.Monitor{
+		ID: "m1", UserID: "u1", Name: "Old", URL: "https://x.com", Method: "GET",
+		IntervalSeconds: 120, TimeoutSeconds: 5,
+		FailureThreshold: 7, RecoveryThreshold: 9,
+		Status: domain.MonitorUp, IsActive: true,
+	}}
+	svc := MonitorService{Monitors: repo}
+	out, err := svc.Update(context.Background(), "m1", "u1", MonitorPatch{Name: strptr("New")})
+	if err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+	if out.Name != "New" {
+		t.Fatalf("name not updated: %+v", out)
+	}
+	if out.FailureThreshold != 7 || out.RecoveryThreshold != 9 || out.IntervalSeconds != 120 {
+		t.Fatalf("omitted fields reset: %+v", out)
+	}
+}
