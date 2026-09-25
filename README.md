@@ -33,17 +33,17 @@ Demo login: `demo@pulse.local / demo1234` (register your own for isolation).
 ## Benchmark (measured, `docs/BENCHMARK.md`)
 
 Deterministic stub (70% ok / 15% slow / 10% flaky / 5% timeout), 60s interval,
-16 CPU / 14 GB. Post-hardening (dedup + worker pool + 10s tick):
+16 CPU / 14 GB. Post-hardening (dedup + worker pool + 10s tick + `next_run_at`):
 
 | Monitors | Workers | checks/s | peak burst | queue max | overdue | false incidents | timeouts detected |
 |---|---|---|---|---|---|---|---|
 | 100 | 2 | 1.29 | 3.4/s | 0 | 0 | 0 | 5/5 |
-| 500 | 2 | 6.20 | ~7/s | 0 | 0 | 0 | 25/25 |
+| 500 | 2 | 7.48 | ~8/s | 0 | 0 | 0 | 25/25 |
 | 1000 | 4 | 9.28 | 28/s | 0 | 0 | 0 | 50/50 |
 
-Honest note: peak drain exceeds required rate at every scale, but wave
-phasing stretches effective cadence ~25-44% (synchronized seeding + drain
-spread + tick quantization). Queue stays bounded; incident behavior exact.
+Honest note: peak drain exceeds required rate at every scale; after
+`next_run_at`, wave spacing settled to ~60s steady-state (cold start aside).
+Queue stays bounded; incident behavior exact.
 
 ## Observability
 

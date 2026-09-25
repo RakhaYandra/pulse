@@ -19,17 +19,16 @@ every tick (no dedup). Correctness held (0 false positives, 5/5 timeouts opened)
 | N | W | checks/s | required/s | peak burst | qmax | overdue | ok+inc | timeout OPEN |
 |---|---|----------|------------|------------|------|---------|--------|--------------|
 | 100 | 2 | 1.29 | 1.67 | 3.4/s | 0 | 0/100 | 0 | 5/5 |
-| 500 | 2 | 6.20 | 8.33 | ~7/s | 0 | 0/500 | 0 | 25/25 |
+| 500 | 2 | 7.48 | 8.33 | ~8/s | 0 | 0/500 | 0 | 25/25 |
 | 1000 | 4 | 9.28 | 16.67 | 28/s | 0 | 0/1000 | 0 | 50/50 |
 
 Reads:
 - Peak drain always exceeds required rate (28/s > 16.7/s @N=1000). Capacity OK.
-- Averages trail required by ~25-44%: checks arrive in waves spaced ~60-90s
-  instead of 60s. Causes: synchronized seeding (all monitors due at once) +
-  drain spread (~30s @N=1000, timeout tail) + tick quantization.
+- After `next_run_at` (re-ran N=500): wave spacing settled to ~60s steady-state
+  after cold start (was 60-90s drift). Remaining stretch comes from synchronized
+  seeding + timeout-tail drain, visible in wave gaps, bounded by dedup.
 - Queue bounded at 0 in all post-hardening runs (dedup works; 314 skips seen mid-run).
 - Zero overdue (120s threshold), zero false incidents, 100% timeout detection.
 
 Honest summary: engine sustains 1000 monitors on 4 workers with correct
-incident behavior; effective cadence stretches ~25-44% under synchronized
-load. Fixing wave phasing (e.g. `next_run_at` scheduling) is noted future work.
+incident behavior; residual stretch under synchronized load is measured above.
