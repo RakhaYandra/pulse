@@ -75,12 +75,22 @@ type incidentResponse struct {
 	RecoveryCount int     `json:"recovery_count"`
 }
 
-type summaryResponse struct {
-	TotalMonitors   int     `json:"total_monitors"`
+type summaryResponse struct {	TotalMonitors   int     `json:"total_monitors"`
 	Up              int     `json:"up"`
 	Down            int     `json:"down"`
 	ActiveIncidents int     `json:"active_incidents"`
 	Uptime24h       float64 `json:"uptime_24h"`
+}
+
+type reliabilityResponse struct {
+	MonitorID      string   `json:"monitor_id"`
+	MonitorName    string   `json:"monitor_name"`
+	IncidentsTotal int      `json:"incidents_total"`
+	IncidentsOpen  int      `json:"incidents_open"`
+	MTTRSeconds    *float64 `json:"mttr_seconds"`
+	UptimePct      float64  `json:"uptime_pct"`
+	ChecksTotal    int      `json:"checks_total"`
+	WindowDays     int      `json:"window_days"`
 }
 
 func fmtTime(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }

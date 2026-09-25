@@ -116,3 +116,35 @@ func (r DashboardRepo) Incidents(ctx context.Context, userID, monitorID string, 
 	}
 	return out, rows.Err()
 }
+
+func (r DashboardRepo) Reliability(ctx context.Context, userID string, days int) ([]usecase.ReliabilityRow, error) {
+	rows, err := r.DB.QueryContext(ctx, `SELECT m.id, m.name,
+		COUNT(i.id) FILTER (WHERE i.started_at > now() - make_interval(days => $2)),
+		COUNT(i.id) FILTER (WHERE i.status='OPEN'),
+		AVG(EXTRACT(EPOCH FROM (i.resolved_at - i.started_at))) FILTER (WHERE i.resolved_at IS NOT NULL AND i.started_at > now() - make_interval(days => $2)),
+		COALESCE((SELECT 100.0*SUM(CASE WHEN c.status='UP' THEN 1 ELSE 0 END)/NULLIF(COUNT(*),0)
+			FROM monitor_checks c WHERE c.monitor_id=m.id AND c.checked_at > now() - make_interval(days => $2)), 0),
+		COALESCE((SELECT COUNT(*) FROM monitor_checks c WHERE c.monitor_id=m.id AND c.checked_at > now() - make_interval(days => $2)), 0)
+		FROM monitors m LEFT JOIN incidents i ON i.monitor_id=m.id
+		WHERE m.user_id=$1 GROUP BY m.id, m.name ORDER BY m.name`, userID, days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []usecase.ReliabilityRow{}
+	for rows.Next() {
+		var v usecase.ReliabilityRow
+		var mttr sql.NullFloat64
+		var up float64
+		if err := rows.Scan(&v.MonitorID, &v.MonitorName, &v.IncidentsTotal, &v.IncidentsOpen, &mttr, &up, &v.ChecksTotal); err != nil {
+			return nil, err
+		}
+		if mttr.Valid {
+			v.MTTRSeconds = &mttr.Float64
+		}
+		v.UptimePct = up
+		v.WindowDays = days
+		out = append(out, v)
+	}
+	return out, rows.Err()
+}

@@ -118,9 +118,10 @@ Success: `{"data": ...}`.
 | GET | `/api/v1/monitors/:id/incidents` | yes | per-monitor history |
 | GET | `/api/v1/incidents` | yes | all own incidents, newest first |
 | GET | `/api/v1/dashboard/summary` | yes | totals, up/down, active, 24h uptime |
+| GET | `/api/v1/reports/reliability?days=30` | yes | per-monitor MTTR, uptime, 1-90d |
 
 Full machine-readable contract: [`qa/collection.json`](qa/collection.json)
-(20 requests, Newman-gated).
+(22 requests, Newman-gated).
 
 ## Configuration
 
@@ -168,8 +169,8 @@ Full machine-readable contract: [`qa/collection.json`](qa/collection.json)
 | Layer | Command | Result |
 |---|---|---|
 | Go unit | `go test ./...` (in `backend/`) | domain + usecase (fake repos) + checker + SSRF + rate limit |
-| API contract | `npx newman run qa/collection.json --env-var baseUrl=http://localhost:8080` | 20/20 |
-| E2E (black-box) | `npm test --prefix e2e` (in `pulse-web`) | 5/5 |
+| API contract | `npx newman run qa/collection.json --env-var baseUrl=http://localhost:8080` | 22/22 |
+| E2E (black-box) | `npm test --prefix e2e` (in `pulse-web`) | 7/7 |
 | Engine | register → 404 monitor → OPEN → fix URL → RESOLVED | verified live |
 
 ## Benchmark (measured, [`docs/BENCHMARK.md`](docs/BENCHMARK.md))
@@ -234,7 +235,7 @@ Docs index: [ARCHITECTURE](docs/ARCHITECTURE.md) · [BENCHMARK](docs/BENCHMARK.m
 ## Roadmap
 
 Done: MVP engine, full CA both repos, SSRF + rate limiting, metrics +
-benchmark + hardening, observability, backup runbook.
-Next: live Telegram verification, single-VPS deploy, MTTR/SLA reports,
-self-monitoring.
+benchmark + hardening, observability, backup runbook, incident click-through,
+MTTR/SLA reports, self-monitoring.
+Next: live Telegram verification, single-VPS deploy.
 Non-goals: HA Postgres/Redis, multi-region, teams/billing.

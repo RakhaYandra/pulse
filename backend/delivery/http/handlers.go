@@ -234,6 +234,30 @@ func (h Handler) Dashboard(c *gin.Context) {
 	})
 }
 
+func (h Handler) Reliability(c *gin.Context) {
+	days := 30
+	if q := c.Query("days"); q != "" {
+		if n, err := strconv.Atoi(q); err == nil {
+			days = n
+		}
+	}
+	rows, err := h.Dash.Reliability(c.Request.Context(), uid(c), days)
+	if err != nil {
+		writeErr(c, err)
+		return
+	}
+	out := make([]reliabilityResponse, 0, len(rows))
+	for _, v := range rows {
+		out = append(out, reliabilityResponse{
+			MonitorID: v.MonitorID, MonitorName: v.MonitorName,
+			IncidentsTotal: v.IncidentsTotal, IncidentsOpen: v.IncidentsOpen,
+			MTTRSeconds: v.MTTRSeconds, UptimePct: v.UptimePct,
+			ChecksTotal: v.ChecksTotal, WindowDays: v.WindowDays,
+		})
+	}
+	writeOK(c, out)
+}
+
 // --- middleware ---
 
 func (h Handler) AuthMiddleware() gin.HandlerFunc {

@@ -53,3 +53,21 @@ func (s DashboardService) Checks(ctx context.Context, monitorID, userID string, 
 func (s DashboardService) Incidents(ctx context.Context, userID, monitorID string) ([]IncidentView, error) {
 	return s.Dash.Incidents(ctx, userID, monitorID, 100)
 }
+
+type ReliabilityRow struct {
+	MonitorID      string
+	MonitorName    string
+	IncidentsTotal int
+	IncidentsOpen  int
+	MTTRSeconds    *float64
+	UptimePct      float64
+	ChecksTotal    int
+	WindowDays     int
+}
+
+func (s DashboardService) Reliability(ctx context.Context, userID string, days int) ([]ReliabilityRow, error) {
+	if days <= 0 || days > 90 {
+		days = 30
+	}
+	return s.Dash.Reliability(ctx, userID, days)
+}

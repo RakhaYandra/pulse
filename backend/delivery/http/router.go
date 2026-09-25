@@ -94,6 +94,7 @@ func NewRouter(h Handler, health HealthChecker, rl RateLimit) *gin.Engine {
 		}
 		v1.GET("/incidents", h.AuthMiddleware(), h.Incidents)
 		v1.GET("/dashboard/summary", h.AuthMiddleware(), h.Dashboard)
+		v1.GET("/reports/reliability", h.AuthMiddleware(), h.Reliability)
 	}
 	return r
 }

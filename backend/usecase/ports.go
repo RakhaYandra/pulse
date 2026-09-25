@@ -48,6 +48,7 @@ type DashboardRepo interface {
 	Summary(ctx context.Context, userID string) (Summary, error)
 	Checks(ctx context.Context, monitorID, userID string, limit int) ([]CheckView, error)
 	Incidents(ctx context.Context, userID, monitorID string, limit int) ([]IncidentView, error)
+	Reliability(ctx context.Context, userID string, days int) ([]ReliabilityRow, error)
 }
 
 type Hasher interface {
