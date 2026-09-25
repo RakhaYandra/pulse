@@ -3,6 +3,8 @@ package http
 import (
 	"context"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -13,11 +15,35 @@ type HealthChecker struct {
 	Redis func(ctx context.Context) error
 }
 
+// corsOrigins parses CORS_ALLOWED_ORIGINS (comma-separated).
+// Default is the local dev dashboard. "*" is honored only when set
+// explicitly — never by default.
+func corsOrigins() map[string]bool {
+	raw := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if raw == "" {
+		raw = "http://localhost:5173"
+	}
+	out := map[string]bool{}
+	for _, o := range strings.Split(raw, ",") {
+		if o = strings.TrimSpace(o); o != "" {
+			out[o] = true
+		}
+	}
+	return out
+}
+
 func NewRouter(h Handler, health HealthChecker) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Recovery())
+	allowedOrigins := corsOrigins()
 	r.Use(func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
+		origin := c.GetHeader("Origin")
+		if allowedOrigins["*"] {
+			c.Header("Access-Control-Allow-Origin", "*")
+		} else if allowedOrigins[origin] {
+			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Vary", "Origin")
+		}
 		c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 		if c.Request.Method == "OPTIONS" {
