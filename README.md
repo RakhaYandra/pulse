@@ -27,7 +27,7 @@ Demo login: `demo@pulse.local / demo1234` (register your own for isolation).
 | Engine E2E (real) | 404-monitor → OPEN after 2 fails → RESOLVED after recovery, dashboard correct |
 | Newman | 20/20 (`qa/collection.json`) |
 | Go unit | domain + usecase (fake repos) + checker |
-| Playwright e2e | 5/5 (`qa/e2e`, black-box) |
+| Playwright e2e | 5/5 (`pulse-web/e2e`, black-box) |
 | Avg API latency (Newman) | ~10ms local |
 
 ## Benchmark (measured, `docs/BENCHMARK.md`)
@@ -68,7 +68,7 @@ docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d p
 ## Layout
 
 `backend/` (Go, Clean Architecture: domain/usecase/infrastructure/delivery)
-`qa/` (Newman + Playwright) · `docs/` (BRD, PRD, Architecture, ADRs)
+`qa/` (Newman contract) · `docs/` (BRD, PRD, Architecture, ADRs)
 
 ## Future
 
