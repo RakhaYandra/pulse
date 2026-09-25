@@ -30,8 +30,8 @@ type Monitor struct {
 	LastCheckedAt     *time.Time
 	// NextRunAt is internal scheduling state (not exposed via API).
 	// Due = NextRunAt elapsed, so cadence doesn't drift with drain time.
-	NextRunAt         *time.Time
-	CreatedAt         time.Time
+	NextRunAt *time.Time
+	CreatedAt time.Time
 }
 
 // Validate enforces creation/update business rules. No framework, no SQL.
