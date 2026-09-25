@@ -31,6 +31,8 @@ func NewRouter(h Handler, health HealthChecker) *gin.Engine {
 	})
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	v1 := r.Group("/api/v1")
+	v1.Use(NewLimiter(100.0/60, 100).Middleware())      // 100 req/min/IP global
+	authLimiter := NewLimiter(10.0/60, 10).Middleware() // 10 req/min/IP auth
 	{
 		v1.GET("/health", func(c *gin.Context) {
 			dbOK := health.DB(c.Request.Context()) == nil
@@ -43,8 +45,8 @@ func NewRouter(h Handler, health HealthChecker) *gin.Engine {
 				"database": map[bool]string{true: "healthy", false: "down"}[dbOK],
 				"redis":    map[bool]string{true: "healthy", false: "down"}[redisOK]})
 		})
-		v1.POST("/auth/register", h.Register)
-		v1.POST("/auth/login", h.Login)
+		v1.POST("/auth/register", authLimiter, h.Register)
+		v1.POST("/auth/login", authLimiter, h.Login)
 		v1.GET("/auth/me", h.AuthMiddleware(), h.Me)
 		m := v1.Group("/monitors", h.AuthMiddleware())
 		{
