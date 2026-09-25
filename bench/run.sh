@@ -21,7 +21,6 @@ docker compose up -d postgres redis api scheduler >/dev/null
 docker compose --profile bench up -d stub >/dev/null
 sleep 3
 
-echo "--- bench user + clean + seed"
 EMAIL="bench${N}_${W}_$(date +%s)@pulse.local"
 # Auth endpoints are rate-limited: retry with backoff on 429.
 TOKEN=""
@@ -42,6 +41,21 @@ docker compose stop worker-1 worker-2 worker-3 worker-4 2>/dev/null || true
 for i in $(seq 1 "$W"); do docker compose up -d "worker-$i" >/dev/null; done
 docker compose restart scheduler >/dev/null
 sleep 5
+
+echo "--- pre-flight (fail fast on dead rig)"
+STUB_CODE=$(curl -s -o /dev/null -w '%{http_code}' localhost:8099/ok)
+if [ "$STUB_CODE" != "200" ]; then echo "ABORT: stub :8099/ok = $STUB_CODE"; exit 1; fi
+for i in $(seq 1 "$W"); do
+  ENV_OK=$(docker compose exec -T "worker-$i" printenv PULSE_ALLOW_HOSTS 2>/dev/null | tr -d '\r')
+  if [ "$ENV_OK" != "stub" ]; then echo "ABORT: worker-$i PULSE_ALLOW_HOSTS='$ENV_OK' (want 'stub')"; exit 1; fi
+done
+# Early signal: checks must flow within 75s, else abort before long sampling.
+sleep 60
+UP_NOW=$(curl -s localhost:9102/metrics 2>/dev/null | grep -c '^monitor_checks_total' || true)
+sleep 15
+UP_LATER=$(curl -s localhost:9102/metrics 2>/dev/null | grep -c '^monitor_checks_total' || true)
+if [ "$UP_LATER" -le "$UP_NOW" ]; then echo "ABORT: no new checks in 75s (workers stuck?)"; exit 1; fi
+echo "pre-flight OK (stub 200, allowlist set, checks flowing)"
 
 echo "--- sample metrics every 30s for ${D}s"
 PORTS="9105"
@@ -123,5 +137,13 @@ res = {
 }
 json.dump(res, open(res_f, "w"), indent=1)
 print(f"N={N} W={W}: {res['checks_per_s']}/s, fail={res['fail_ratio']}, qmax={res['queue_depth_max']}, overdue={overdue}, ok_inc={inc_ok}, timeout_open={inc_to}")
+# Validity gates: invalid runs fail loudly instead of publishing bad data.
+ok_n = int(N * 0.7)
+if inc_ok > max(1, int(ok_n * 0.05)):
+    print(f"INVALID: {inc_ok} false incidents on ok monitors")
+    sys.exit(2)
+if res['queue_depth_max'] > N:
+    print(f"INVALID: queue exploded (qmax={res['queue_depth_max']})")
+    sys.exit(2)
 EOF
 echo "wrote $RES"

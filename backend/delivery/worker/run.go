@@ -31,6 +31,9 @@ func concurrency() int {
 	return runtime.NumCPU()
 }
 
+// Concurrency exposes the effective pool size for startup logging.
+func Concurrency() int { return concurrency() }
+
 func (r Runner) Run(ctx context.Context) {
 	sem := make(chan struct{}, concurrency())
 	r.Log.Info("worker waiting for jobs")

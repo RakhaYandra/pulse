@@ -32,14 +32,16 @@ func (r Runner) Run(ctx context.Context) {
 
 // tickInterval bounds schedule granularity. Lower = tighter cadence at the
 // cost of more due-scans (cheap indexed query). Benchmarked at 10s.
-func tickInterval() time.Duration {
-	if v := os.Getenv("SCHED_TICK_SECONDS"); v != "" {
+func tickInterval() time.Duration {	if v := os.Getenv("SCHED_TICK_SECONDS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= 60 {
 			return time.Duration(n) * time.Second
 		}
 	}
 	return 10 * time.Second
 }
+
+// TickInterval exposes the effective scheduler tick for startup logging.
+func TickInterval() time.Duration { return tickInterval() }
 
 func (r Runner) enqueue(ctx context.Context) {
 	due, err := r.Monitors.Due(ctx)
