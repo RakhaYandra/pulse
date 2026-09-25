@@ -3,3 +3,5 @@ pulse
 *.log
 node_modules/
 dist/
+# Raw benchmark samples (2M+); summary bench_*.json stays tracked.
+bench/results/samples_*.jsonl
