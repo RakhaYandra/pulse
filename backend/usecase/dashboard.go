@@ -25,6 +25,7 @@ type CheckView struct {
 
 type IncidentView struct {
 	ID            string
+	MonitorID     string
 	MonitorName   string
 	Status        domain.IncidentStatus
 	Reason        string

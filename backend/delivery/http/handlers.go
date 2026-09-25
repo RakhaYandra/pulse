@@ -189,7 +189,7 @@ func (h Handler) Checks(c *gin.Context) {
 
 func toIncidentResponse(v usecase.IncidentView) incidentResponse {
 	return incidentResponse{
-		ID: v.ID, MonitorName: v.MonitorName, Status: string(v.Status),
+		ID: v.ID, MonitorID: v.MonitorID, MonitorName: v.MonitorName, Status: string(v.Status),
 		Reason: v.Reason, StartedAt: fmtTime(v.StartedAt),
 		ResolvedAt:   fmtTimePtr(v.ResolvedAt),
 		FailureCount: v.FailureCount, RecoveryCount: v.RecoveryCount,

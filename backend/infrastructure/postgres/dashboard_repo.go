@@ -77,7 +77,7 @@ func (r DashboardRepo) Checks(ctx context.Context, monitorID, userID string, lim
 }
 
 func (r DashboardRepo) Incidents(ctx context.Context, userID, monitorID string, limit int) ([]usecase.IncidentView, error) {
-	q := `SELECT i.id,m.name,i.status,i.reason,i.started_at,i.resolved_at,i.failure_count,i.recovery_count
+	q := `SELECT i.id,i.monitor_id,m.name,i.status,i.reason,i.started_at,i.resolved_at,i.failure_count,i.recovery_count
 		FROM incidents i JOIN monitors m ON m.id=i.monitor_id
 		WHERE m.user_id=$1 `
 	args := []any{userID}
@@ -105,7 +105,7 @@ func (r DashboardRepo) Incidents(ctx context.Context, userID, monitorID string, 
 		var v usecase.IncidentView
 		var st string
 		var resolved sql.NullTime
-		if err := rows.Scan(&v.ID, &v.MonitorName, &st, &v.Reason, &v.StartedAt, &resolved, &v.FailureCount, &v.RecoveryCount); err != nil {
+		if err := rows.Scan(&v.ID, &v.MonitorID, &v.MonitorName, &st, &v.Reason, &v.StartedAt, &resolved, &v.FailureCount, &v.RecoveryCount); err != nil {
 			return nil, err
 		}
 		v.Status = domain.IncidentStatus(st)

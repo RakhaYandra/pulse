@@ -65,6 +65,7 @@ type checkResponse struct {
 
 type incidentResponse struct {
 	ID            string  `json:"id"`
+	MonitorID     string  `json:"monitor_id"`
 	MonitorName   string  `json:"monitor_name"`
 	Status        string  `json:"status"`
 	Reason        string  `json:"reason"`
