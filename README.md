@@ -237,4 +237,4 @@ Done: MVP engine, full CA both repos, SSRF + rate limiting, metrics +
 benchmark + hardening, observability, backup runbook.
 Next: live Telegram verification, single-VPS deploy, MTTR/SLA reports,
 self-monitoring.
-Non-goals: HA Postgres/Redis, multi-region, teams/billing, AI anomaly detection.
+Non-goals: HA Postgres/Redis, multi-region, teams/billing.

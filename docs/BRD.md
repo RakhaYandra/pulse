@@ -16,7 +16,7 @@ reliability history.
 ## 4. Scope (MVP)
 IN: auth, monitor CRUD + pause/resume, scheduled HTTP checks, check history,
 incident open/resolve on thresholds, Telegram notify on transitions, dashboard.
-OUT: teams/billing, SMS/email, multi-region, K8s/Terraform, AI anomaly, complex RBAC.
+OUT: teams/billing, SMS/email, multi-region, K8s/Terraform, complex RBAC.
 
 ## 5. Success criteria
 - Monitor with failure_threshold=3 opens an incident after 3 consecutive failures.
