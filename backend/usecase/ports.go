@@ -28,6 +28,8 @@ type MonitorRepo interface {
 	// ActiveMonitor returns url+thresholds iff monitor exists and is active.
 	ActiveMonitor(ctx context.Context, id string) (domain.Monitor, error) // ErrNotFound skips job
 	RecordStatus(ctx context.Context, id string, st domain.MonitorStatus) error
+	// MarkScheduled advances next_run_at from the scheduled moment.
+	MarkScheduled(ctx context.Context, id string, next time.Time) error
 }
 
 type CheckRepo interface {

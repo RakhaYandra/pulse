@@ -28,6 +28,9 @@ type Monitor struct {
 	Status            MonitorStatus
 	IsActive          bool
 	LastCheckedAt     *time.Time
+	// NextRunAt is internal scheduling state (not exposed via API).
+	// Due = NextRunAt elapsed, so cadence doesn't drift with drain time.
+	NextRunAt         *time.Time
 	CreatedAt         time.Time
 }
 

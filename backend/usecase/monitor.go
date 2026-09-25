@@ -128,6 +128,10 @@ func (s MonitorService) Update(ctx context.Context, id, userID string, p Monitor
 		existing.URL = strings.TrimSpace(*p.URL)
 	}
 	if p.IntervalSeconds != nil {
+		if *p.IntervalSeconds != existing.IntervalSeconds {
+			t := time.Now().Add(time.Duration(*p.IntervalSeconds) * time.Second)
+			existing.NextRunAt = &t
+		}
 		existing.IntervalSeconds = *p.IntervalSeconds
 	}
 	if p.TimeoutSeconds != nil {
@@ -175,4 +179,10 @@ func (s MonitorService) Due(ctx context.Context) ([]MonitorDTO, error) {
 		out = append(out, toMonitorDTO(m))
 	}
 	return out, nil
+}
+
+// Scheduled advances the monitor's next run from the scheduled moment
+// (not from check completion), keeping cadence drift-free.
+func (s MonitorService) Scheduled(ctx context.Context, id string, at time.Time) error {
+	return s.Monitors.MarkScheduled(ctx, id, at)
 }

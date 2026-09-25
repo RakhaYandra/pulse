@@ -61,6 +61,11 @@ func (r Runner) enqueue(ctx context.Context) {
 			skipped++
 			continue
 		}
+		// Advance next run from the scheduled moment, not from completion.
+		next := time.Now().Add(time.Duration(m.IntervalSeconds) * time.Second)
+		if err := r.Monitors.Scheduled(ctx, m.ID, next); err != nil {
+			r.Log.Error("mark scheduled failed", "err", err)
+		}
 		n++
 	}
 	metrics.SchedulerEnqueued.Add(float64(n))

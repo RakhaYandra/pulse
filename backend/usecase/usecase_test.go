@@ -45,6 +45,10 @@ func (f *fakeMonitorRepo) RecordStatus(ctx context.Context, id string, st domain
 	f.m.Status = st
 	return nil
 }
+func (f *fakeMonitorRepo) MarkScheduled(ctx context.Context, id string, next time.Time) error {
+	f.m.NextRunAt = &next
+	return nil
+}
 
 type fakeCheckRepo struct{ statuses []domain.CheckStatus }
 
