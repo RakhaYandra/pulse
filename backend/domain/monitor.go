@@ -41,7 +41,7 @@ func (m Monitor) Validate() error {
 		return &FieldError{Field: "url", Message: "url must be valid http(s)"}
 	}
 	host := strings.ToLower(u.Hostname())
-	if host == "localhost" || strings.HasPrefix(host, "127.") || host == "::1" {
+	if BlockedHost(host) {
 		return &FieldError{Field: "url", Message: "url host not allowed"}
 	}
 	if m.IntervalSeconds < 60 {

@@ -1,6 +1,9 @@
 package domain
 
-import "testing"
+import (
+	"net"
+	"testing"
+)
 
 func TestMonitorValidate(t *testing.T) {
 	good := Monitor{Name: "P", URL: "https://api.example.com/h", IntervalSeconds: 300,
@@ -12,6 +15,12 @@ func TestMonitorValidate(t *testing.T) {
 		{Name: "", URL: "https://x.com"},
 		{Name: "P", URL: "not-a-url"},
 		{Name: "P", URL: "http://localhost:9/x", IntervalSeconds: 300, TimeoutSeconds: 5, FailureThreshold: 1, RecoveryThreshold: 1},
+		{Name: "P", URL: "http://10.0.0.1/x", IntervalSeconds: 300, TimeoutSeconds: 5, FailureThreshold: 1, RecoveryThreshold: 1},
+		{Name: "P", URL: "http://192.168.1.1/x", IntervalSeconds: 300, TimeoutSeconds: 5, FailureThreshold: 1, RecoveryThreshold: 1},
+		{Name: "P", URL: "http://172.16.0.5/x", IntervalSeconds: 300, TimeoutSeconds: 5, FailureThreshold: 1, RecoveryThreshold: 1},
+		{Name: "P", URL: "http://169.254.169.254/x", IntervalSeconds: 300, TimeoutSeconds: 5, FailureThreshold: 1, RecoveryThreshold: 1},
+		{Name: "P", URL: "http://[::1]/x", IntervalSeconds: 300, TimeoutSeconds: 5, FailureThreshold: 1, RecoveryThreshold: 1},
+		{Name: "P", URL: "http://[fd00::1]/x", IntervalSeconds: 300, TimeoutSeconds: 5, FailureThreshold: 1, RecoveryThreshold: 1},
 		{Name: "P", URL: "https://x.com", IntervalSeconds: 10, TimeoutSeconds: 5, FailureThreshold: 1, RecoveryThreshold: 1},
 		{Name: "P", URL: "https://x.com", IntervalSeconds: 60, TimeoutSeconds: 60, FailureThreshold: 1, RecoveryThreshold: 1},
 	}
@@ -30,6 +39,21 @@ func TestMonitorValidate(t *testing.T) {
 		}
 		if err := m.Validate(); err == nil {
 			t.Fatalf("case %d accepted, want validation error", i)
+		}
+	}
+}
+
+func TestBlockedIP(t *testing.T) {
+	blocked := []string{"127.0.0.1", "10.1.2.3", "172.16.5.4", "192.168.0.1", "169.254.169.254", "::1", "fd00::1", "0.0.0.0"}
+	for _, s := range blocked {
+		if !BlockedIP(net.ParseIP(s)) {
+			t.Fatalf("%s should be blocked", s)
+		}
+	}
+	allowed := []string{"8.8.8.8", "1.1.1.1", "93.184.216.34"}
+	for _, s := range allowed {
+		if BlockedIP(net.ParseIP(s)) {
+			t.Fatalf("%s should be allowed", s)
 		}
 	}
 }
