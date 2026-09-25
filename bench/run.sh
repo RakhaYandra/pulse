@@ -14,21 +14,32 @@ mkdir -p bench/results
 echo "=== pulse bench N=$N W=$W D=${D}s ==="
 
 echo "--- up core + stub"
+# Bench targets live on Docker-internal DNS ("stub"), which SSRF filtering
+# blocks by default — allowlist it for the bench only (strict otherwise).
+export PULSE_ALLOW_HOSTS=stub
 docker compose up -d postgres redis api scheduler >/dev/null
 docker compose --profile bench up -d stub >/dev/null
 sleep 3
 
 echo "--- bench user + clean + seed"
 EMAIL="bench${N}_${W}_$(date +%s)@pulse.local"
-TOKEN=$(curl -s -X POST localhost:8080/api/v1/auth/register -H 'Content-Type: application/json' \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"bench1234\",\"name\":\"Bench\"}" | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['token'])")
+# Auth endpoints are rate-limited: retry with backoff on 429.
+TOKEN=""
+for attempt in $(seq 1 5); do
+  TOKEN=$(curl -s -X POST localhost:8080/api/v1/auth/register -H 'Content-Type: application/json' \
+    -d "{\"email\":\"$EMAIL\",\"password\":\"bench1234\",\"name\":\"Bench\"}" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['data']['token'] if 'data' in d else 'RETRY')")
+  if [ "$TOKEN" != "RETRY" ]; then break; fi
+  echo "register rate-limited, waiting 65s (attempt $attempt)"
+  sleep 65
+done
+if [ "$TOKEN" = "RETRY" ]; then echo "register failed after retries"; exit 1; fi
 USER_ID=$(curl -s localhost:8080/api/v1/auth/me -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['id'])")
 docker compose exec -T postgres psql -U pulse -d pulse -c "DELETE FROM monitors WHERE name LIKE 'bench-%';" >/dev/null
 docker compose exec -T postgres psql -U pulse -d pulse -v N="$N" -v USER_ID="$USER_ID" -f - < bench/seed.sql
 
-echo "--- workers: stop all, start $W, restart scheduler (zero counters)"
+echo "--- workers: stop all, (re)create $W, restart scheduler (zero counters)"
 docker compose stop worker-1 worker-2 worker-3 worker-4 2>/dev/null || true
-for i in $(seq 1 "$W"); do docker compose start "worker-$i" >/dev/null; done
+for i in $(seq 1 "$W"); do docker compose up -d "worker-$i" >/dev/null; done
 docker compose restart scheduler >/dev/null
 sleep 5
 

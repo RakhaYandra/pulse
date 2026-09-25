@@ -1,14 +1,14 @@
 {
  "N": 500,
  "workers": 2,
- "elapsed_s": 570.1,
- "checks_total": 3535,
- "checks_per_s": 6.2,
- "fail_ratio": 0.099,
- "queue_depth_max": 0,
- "inflight_max": 25,
+ "elapsed_s": 270.1,
+ "checks_total": 23,
+ "checks_per_s": 0.09,
+ "fail_ratio": 0.0,
+ "queue_depth_max": 860,
+ "inflight_max": 32,
  "overdue_monitors": 0,
- "ok_monitors_with_incidents": 0,
+ "ok_monitors_with_incidents": 346,
  "timeout_monitors_open": 25,
- "scheduler_enqueued": 3510
+ "scheduler_enqueued": 2015
 }
