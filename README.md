@@ -1,6 +1,6 @@
 # Pulse — API Monitoring & Incident Platform
 
-> Ecosystem: [api](https://github.com/RakhaYandra/pulse) (this repo) · [web](https://github.com/RakhaYandra/pulse-web)
+> Ecosystem: [api](https://github.com/RakhaYandra/pulse) (this repo) · [web](https://github.com/RakhaYandra/pulse-web) · [docs](https://github.com/RakhaYandra/pulse-docs/releases)
 
 Go, Gin, PostgreSQL, Redis, Docker. Full Clean Architecture.
 
@@ -173,7 +173,7 @@ Full machine-readable contract: [`qa/collection.json`](qa/collection.json)
 | E2E (black-box) | `npm test --prefix e2e` (in `pulse-web`) | 7/7 |
 | Engine | register → 404 monitor → OPEN → fix URL → RESOLVED | verified live |
 
-## Benchmark (measured, [`docs/BENCHMARK.md`](docs/BENCHMARK.md))
+## Benchmark (measured, [`docs/BENCHMARK.md`](https://github.com/RakhaYandra/pulse-docs/blob/main/BENCHMARK.md))
 
 Deterministic stub (70% ok / 15% slow / 10% flaky / 5% timeout), 60s interval,
 16 CPU / 14 GB. Post-hardening (dedup + worker pool + 10s tick + `next_run_at`):
@@ -202,14 +202,14 @@ docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d p
 # Grafana http://localhost:3000 (admin / $GF_SECURITY_ADMIN_PASSWORD), dashboard "Pulse"
 ```
 
-![Grafana dashboard](docs/grafana.png)
+![Grafana dashboard](https://raw.githubusercontent.com/RakhaYandra/pulse-docs/main/grafana.png)
 
 ## Operations
 
 - Backup/restore: [`ops/BACKUP.md`](ops/BACKUP.md) (pg_dump, volume snapshots).
 - Bench cleanup: `bench/clean.sql` (deletes `bench-%` monitors + bench users).
 - After editing compose env: use `up -d` (recreates), never bare `start` —
-  stale containers keep old env (see `docs/POSTMORTEM-002-bench-ssrf.md`).
+  stale containers keep old env (see [POSTMORTEM-002](https://github.com/RakhaYandra/pulse-docs/blob/main/POSTMORTEM-002-bench-ssrf.md)).
 - Restart policies + Redis AOF are on; Postgres data persists in `pgdata`.
 
 ## Layout & docs
@@ -221,16 +221,17 @@ pulse/
 ├── observability/      # prometheus.yml, alerts.yml, grafana provisioning + dashboard
 ├── ops/                # BACKUP.md
 ├── qa/                 # collection.json (Newman contract)
-└── docs/               # BRD, PRD, ARCHITECTURE, BENCHMARK, ADRs, postmortems
+└── docs/ → [pulse-docs](https://github.com/RakhaYandra/pulse-docs)  # split out
 ```
 
-Docs index: [ARCHITECTURE](docs/ARCHITECTURE.md) · [BENCHMARK](docs/BENCHMARK.md) ·
-[ADR-001](docs/ADR-001-monolith.md) [002](docs/ADR-002-redis-queue.md)
-[003](docs/ADR-003-retry-vs-check.md) [004](docs/ADR-004-split.md)
-[005](docs/ADR-005-full-ca.md) [006](docs/ADR-006-metrics.md)
-[007](docs/ADR-007-hardening.md) [008](docs/ADR-008-security.md) ·
-[POSTMORTEM-001](docs/POSTMORTEM-001-jwt-workers.md)
-[002](docs/POSTMORTEM-002-bench-ssrf.md)
+Docs live in [pulse-docs](https://github.com/RakhaYandra/pulse-docs):
+[ARCHITECTURE](https://github.com/RakhaYandra/pulse-docs/blob/main/ARCHITECTURE.md) · [BENCHMARK](https://github.com/RakhaYandra/pulse-docs/blob/main/BENCHMARK.md) ·
+[ADR-001](https://github.com/RakhaYandra/pulse-docs/blob/main/ADR-001-monolith.md) [002](https://github.com/RakhaYandra/pulse-docs/blob/main/ADR-002-redis-queue.md)
+[003](https://github.com/RakhaYandra/pulse-docs/blob/main/ADR-003-retry-vs-check.md) [004](https://github.com/RakhaYandra/pulse-docs/blob/main/ADR-004-split.md)
+[005](https://github.com/RakhaYandra/pulse-docs/blob/main/ADR-005-full-ca.md) [006](https://github.com/RakhaYandra/pulse-docs/blob/main/ADR-006-metrics.md)
+[007](https://github.com/RakhaYandra/pulse-docs/blob/main/ADR-007-hardening.md) [008](https://github.com/RakhaYandra/pulse-docs/blob/main/ADR-008-security.md) ·
+[POSTMORTEM-001](https://github.com/RakhaYandra/pulse-docs/blob/main/POSTMORTEM-001-jwt-workers.md)
+[002](https://github.com/RakhaYandra/pulse-docs/blob/main/POSTMORTEM-002-bench-ssrf.md)
 
 ## Roadmap
 
