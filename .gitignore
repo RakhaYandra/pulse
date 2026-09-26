@@ -3,5 +3,7 @@ pulse
 *.log
 node_modules/
 dist/
+# Stale split leftover; must never come back.
+frontend/
 # Raw benchmark samples (2M+); summary bench_*.json stays tracked.
 bench/results/samples_*.jsonl
