@@ -1,6 +1,6 @@
 # Pulse — API Monitoring & Incident Platform
 
-> Ecosystem: [api](https://github.com/RakhaYandra/pulse) (this repo) · [web](https://github.com/RakhaYandra/pulse-web) · [docs](https://github.com/RakhaYandra/pulse-docs/releases) · [data](https://github.com/RakhaYandra/pulse-data)
+> Ecosystem: [api](https://github.com/RakhaYandra/pulse) · [web](https://github.com/RakhaYandra/pulse-web) · [docs](https://github.com/RakhaYandra/pulse-docs/releases) · [data](https://github.com/RakhaYandra/pulse-data) · [qa](https://github.com/RakhaYandra/pulse-qa) · [ops](https://github.com/RakhaYandra/pulse-ops)
 
 Go, Gin, PostgreSQL, Redis, Docker. Full Clean Architecture.
 
@@ -55,9 +55,10 @@ Key engineering points:
 
 ## Quickstart
 
+Stack lives in [`pulse-ops`](https://github.com/RakhaYandra/pulse-ops)
+(compose + env + runbook). With it up:
+
 ```bash
-cp .env.example .env   # set JWT_SECRET (required — boot fails without it)
-docker compose up -d --build
 curl localhost:8080/health
 ```
 
@@ -120,7 +121,7 @@ Success: `{"data": ...}`.
 | GET | `/api/v1/dashboard/summary` | yes | totals, up/down, active, 24h uptime |
 | GET | `/api/v1/reports/reliability?days=30` | yes | per-monitor MTTR, uptime, 1-90d |
 
-Full machine-readable contract: [`qa/collection.json`](qa/collection.json)
+Full machine-readable contract: [`pulse-qa/collection.json`](https://github.com/RakhaYandra/pulse-qa/blob/main/collection.json)
 (22 requests, Newman-gated).
 
 ## Configuration
@@ -169,7 +170,7 @@ Full machine-readable contract: [`qa/collection.json`](qa/collection.json)
 | Layer | Command | Result |
 |---|---|---|
 | Go unit | `go test ./...` (in `backend/`) | domain + usecase (fake repos) + checker + SSRF + rate limit |
-| API contract | `npx newman run qa/collection.json --env-var baseUrl=http://localhost:8080` | 22/22 |
+| API contract | `npx newman run ../pulse-qa/collection.json --env-var baseUrl=http://localhost:8080` | 22/22 |
 | E2E (black-box) | `npm test --prefix e2e` (in `pulse-web`) | 7/7 |
 | Engine | register → 404 monitor → OPEN → fix URL → RESOLVED | verified live |
 
@@ -188,17 +189,17 @@ Honest note: peak drain exceeds required rate at every scale; after
 `next_run_at`, wave spacing settled to ~60s steady-state (cold start aside).
 Queue stays bounded; incident behavior exact.
 
-Run your own: `./bench/run.sh [N=100] [W=2] [D=600]` — with pre-flight
+Run your own (in `pulse-qa`): `./bench/run.sh [N=100] [W=2] [D=600]` — with pre-flight
 gates (stub alive, workers allowlisted, checks flowing) and validity exit
-codes. Clean up after: `bench/clean.sql`.
+codes. Clean up after: `bench/clean.sql` (in `pulse-qa`).
 
 ## Observability
 
-Per-process `/metrics`, Prometheus + Grafana + 2 alerts
-(`PulseQueueBacklog`, `PulseProcessErrors`) via `docker-compose.observability.yml`:
+Per-process `/metrics`, Prometheus + Grafana + 2 alerts — all operated from
+[`pulse-ops`](https://github.com/RakhaYandra/pulse-ops):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d prometheus grafana
+cd ../pulse-ops && docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d prometheus grafana
 # Grafana http://localhost:3000 (admin / $GF_SECURITY_ADMIN_PASSWORD), dashboard "Pulse"
 ```
 
@@ -206,22 +207,15 @@ docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d p
 
 ## Operations
 
-- Backup/restore: [`ops/BACKUP.md`](ops/BACKUP.md) (pg_dump, volume snapshots).
-- Bench cleanup: `bench/clean.sql` (deletes `bench-%` monitors + bench users).
-- After editing compose env: use `up -d` (recreates), never bare `start` —
-  stale containers keep old env (see [POSTMORTEM-002](https://github.com/RakhaYandra/pulse-docs/blob/main/POSTMORTEM-002-bench-ssrf.md)).
-- Restart policies + Redis AOF are on; Postgres data persists in `pgdata`.
+Operated from [`pulse-ops`](https://github.com/RakhaYandra/pulse-ops):
+backup/restore, bench cleanup, compose env rules, restart/AOF posture.
+Contract tests live in [`pulse-qa`](https://github.com/RakhaYandra/pulse-qa).
 
 ## Layout & docs
 
 ```
 pulse/
-├── backend/            # Go, Clean Architecture: domain/usecase/infrastructure/delivery
-├── bench/              # stub + seed.sql + run.sh + clean.sql + results/*.json
-├── observability/      # prometheus.yml, alerts.yml, grafana provisioning + dashboard
-├── ops/                # BACKUP.md
-├── qa/                 # collection.json (Newman contract)
-└── docs/ → [pulse-docs](https://github.com/RakhaYandra/pulse-docs)  # split out
+└── backend/            # Go, Clean Architecture: domain/usecase/infrastructure/delivery
 ```
 
 Docs live in [pulse-docs](https://github.com/RakhaYandra/pulse-docs):
