@@ -3,15 +3,12 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"embed"
 	"fmt"
 	"sort"
 
+	"github.com/RakhaYandra/pulse/migrations"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
-
-//go:embed migrations/*.sql
-var migrations embed.FS
 
 func Connect(dsn string) (*sql.DB, error) {
 	pool, err := sql.Open("pgx", dsn)
@@ -32,7 +29,7 @@ func migrate(pool *sql.DB) error {
 	if _, err := pool.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations (name TEXT PRIMARY KEY)`); err != nil {
 		return err
 	}
-	entries, err := migrations.ReadDir("migrations")
+	entries, err := migrations.FS.ReadDir(".")
 	if err != nil {
 		return err
 	}
@@ -50,7 +47,7 @@ func migrate(pool *sql.DB) error {
 		if err != sql.ErrNoRows {
 			return err
 		}
-		b, err := migrations.ReadFile("migrations/" + name)
+		b, err := migrations.FS.ReadFile(name)
 		if err != nil {
 			return err
 		}
