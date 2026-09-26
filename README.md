@@ -1,6 +1,6 @@
 # Pulse — API Monitoring & Incident Platform
 
-> Ecosystem: [api](https://github.com/RakhaYandra/pulse) (this repo) · [web](https://github.com/RakhaYandra/pulse-web) · [docs](https://github.com/RakhaYandra/pulse-docs/releases)
+> Ecosystem: [api](https://github.com/RakhaYandra/pulse) (this repo) · [web](https://github.com/RakhaYandra/pulse-web) · [docs](https://github.com/RakhaYandra/pulse-docs/releases) · [data](https://github.com/RakhaYandra/pulse-data)
 
 Go, Gin, PostgreSQL, Redis, Docker. Full Clean Architecture.
 
@@ -238,5 +238,8 @@ Docs live in [pulse-docs](https://github.com/RakhaYandra/pulse-docs):
 Done: MVP engine, full CA both repos, SSRF + rate limiting, metrics +
 benchmark + hardening, observability, backup runbook, incident click-through,
 MTTR/SLA reports, self-monitoring.
-Next: live Telegram verification, single-VPS deploy.
+Frozen (owner decision): live Telegram verification (needs token), single-VPS
+deploy, porto/CV entry.
+Open: residual cadence stretch (see BENCHMARK.md), per-replica rate limit,
+`pulse-data` analytics pipeline.
 Non-goals: HA Postgres/Redis, multi-region, teams/billing.
