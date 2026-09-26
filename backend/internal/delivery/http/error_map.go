@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/RakhaYandra/pulse/domain"
+	"github.com/RakhaYandra/pulse/internal/domain"
 	"github.com/gin-gonic/gin"
 )
 

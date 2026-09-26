@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/RakhaYandra/pulse/domain"
+	"github.com/RakhaYandra/pulse/internal/domain"
 )
 
 type MonitorRepo struct {

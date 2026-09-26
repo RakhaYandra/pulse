@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/RakhaYandra/pulse/domain"
-	"github.com/RakhaYandra/pulse/usecase"
+	"github.com/RakhaYandra/pulse/internal/domain"
+	"github.com/RakhaYandra/pulse/internal/usecase"
 )
 
 type DashboardRepo struct {

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RakhaYandra/pulse/domain"
+	"github.com/RakhaYandra/pulse/internal/domain"
 )
 
 func TestCheckUp(t *testing.T) {

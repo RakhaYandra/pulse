@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RakhaYandra/pulse/domain"
+	"github.com/RakhaYandra/pulse/internal/domain"
 )
 
 // Checker executes HTTP monitoring checks with SSRF protection:

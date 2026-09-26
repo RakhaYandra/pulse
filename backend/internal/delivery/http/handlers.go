@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/RakhaYandra/pulse/domain"
-	"github.com/RakhaYandra/pulse/usecase"
+	"github.com/RakhaYandra/pulse/internal/domain"
+	"github.com/RakhaYandra/pulse/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
 

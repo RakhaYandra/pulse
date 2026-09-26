@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RakhaYandra/pulse/domain"
+	"github.com/RakhaYandra/pulse/internal/domain"
 	"github.com/google/uuid"
 )
 

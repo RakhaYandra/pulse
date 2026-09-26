@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/RakhaYandra/pulse/domain"
+	"github.com/RakhaYandra/pulse/internal/domain"
 )
 
 type Summary struct {

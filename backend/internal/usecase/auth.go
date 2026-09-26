@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/RakhaYandra/pulse/domain"
+	"github.com/RakhaYandra/pulse/internal/domain"
 	"github.com/google/uuid"
 )
 

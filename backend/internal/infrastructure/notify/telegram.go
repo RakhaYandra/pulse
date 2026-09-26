@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/RakhaYandra/pulse/domain"
-	"github.com/RakhaYandra/pulse/pkg/logger"
+	"github.com/RakhaYandra/pulse/internal/domain"
+	"github.com/RakhaYandra/pulse/internal/pkg/logger"
 )
 
 type TelegramNotifier struct {

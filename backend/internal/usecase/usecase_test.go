@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RakhaYandra/pulse/domain"
+	"github.com/RakhaYandra/pulse/internal/domain"
 )
 
 // In-memory fakes: prove use-case logic without any database.

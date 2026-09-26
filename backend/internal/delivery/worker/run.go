@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/RakhaYandra/pulse/domain"
-	"github.com/RakhaYandra/pulse/infrastructure/metrics"
-	"github.com/RakhaYandra/pulse/pkg/logger"
-	"github.com/RakhaYandra/pulse/usecase"
+	"github.com/RakhaYandra/pulse/internal/domain"
+	"github.com/RakhaYandra/pulse/internal/infrastructure/metrics"
+	"github.com/RakhaYandra/pulse/internal/pkg/logger"
+	"github.com/RakhaYandra/pulse/internal/usecase"
 )
 
 type Runner struct {
