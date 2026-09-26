@@ -1,0 +1,24 @@
+version: "2"
+run:
+  timeout: 3m
+formatters:
+  enable:
+    - gofmt
+linters:
+  enable:
+    - govet
+    - misspell
+    - unconvert
+    - unused
+  settings:
+    errcheck:
+      # Cleanup calls with no recovery path: ignore, don't litter _ =.
+      exclude-functions:
+        - (*database/sql.DB).Close
+        - (*database/sql.Rows).Close
+        - (*database/sql.Tx).Rollback
+        - (*github.com/redis/go-redis/v9.Client).Close
+        - (io.ReadCloser).Close
+issues:
+  max-issues-per-linter: 20
+  max-same-issues: 10

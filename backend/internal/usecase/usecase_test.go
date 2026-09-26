@@ -12,8 +12,7 @@ import (
 // In-memory fakes: prove use-case logic without any database.
 
 type fakeMonitorRepo struct {
-	m      domain.Monitor
-	checks []domain.CheckStatus
+	m domain.Monitor
 }
 
 func (f *fakeMonitorRepo) Create(ctx context.Context, m domain.Monitor) error { f.m = m; return nil }

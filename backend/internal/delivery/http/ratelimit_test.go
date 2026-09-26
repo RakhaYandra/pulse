@@ -29,9 +29,10 @@ func TestLimiter(t *testing.T) {
 		req := httptest.NewRequest("GET", "/x", nil)
 		req.RemoteAddr = "9.9.9.9:1234"
 		r.ServeHTTP(w, req)
-		if w.Code == 200 {
+		switch w.Code {
+		case 200:
 			allowed++
-		} else if w.Code == 429 {
+		case 429:
 			rejected++
 		}
 	}

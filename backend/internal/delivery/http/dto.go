@@ -75,7 +75,8 @@ type incidentResponse struct {
 	RecoveryCount int     `json:"recovery_count"`
 }
 
-type summaryResponse struct {	TotalMonitors   int     `json:"total_monitors"`
+type summaryResponse struct {
+	TotalMonitors   int     `json:"total_monitors"`
 	Up              int     `json:"up"`
 	Down            int     `json:"down"`
 	ActiveIncidents int     `json:"active_incidents"`
