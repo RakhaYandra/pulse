@@ -83,6 +83,8 @@ func (s MonitorService) Create(ctx context.Context, userID string, in MonitorInp
 		FailureThreshold: in.FailureThreshold, RecoveryThreshold: in.RecoveryThreshold,
 		Status: domain.MonitorUnknown, IsActive: true,
 	}
+	mon.NextRunAt = new(time.Time)
+	*mon.NextRunAt = domain.StaggerInitialRunAt(mon.ID, time.Duration(in.IntervalSeconds)*time.Second, time.Now())
 	if err := mon.Validate(); err != nil {
 		return MonitorDTO{}, err
 	}

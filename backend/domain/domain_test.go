@@ -3,6 +3,7 @@ package domain
 import (
 	"net"
 	"testing"
+	"time"
 )
 
 func TestMonitorValidate(t *testing.T) {
@@ -70,5 +71,28 @@ func TestEvalStreak(t *testing.T) {
 	f, o = EvalStreak(nil)
 	if f != 0 || o != 0 {
 		t.Fatalf("got fail=%d ok=%d", f, o)
+	}
+}
+
+func TestStaggerInitialRunAt(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	interval := 60 * time.Second
+	a := StaggerInitialRunAt("id-1", interval, now)
+	if a.Before(now) || !a.Before(now.Add(interval)) {
+		t.Fatalf("offset out of [0, interval): %v", a.Sub(now))
+	}
+	b := StaggerInitialRunAt("id-1", interval, now)
+	if !a.Equal(b) {
+		t.Fatal("same ID must yield same offset")
+	}
+	seen := map[time.Duration]bool{}
+	for i := 0; i < 50; i++ {
+		seen[StaggerInitialRunAt("id-"+string(rune('a'+i)), interval, now).Sub(now)] = true
+	}
+	if len(seen) < 10 {
+		t.Fatalf("offsets do not spread: only %d distinct", len(seen))
+	}
+	if got := StaggerInitialRunAt("x", 0, now); !got.Equal(now) {
+		t.Fatal("non-positive interval must return now")
 	}
 }

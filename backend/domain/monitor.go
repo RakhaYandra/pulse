@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"hash/fnv"
 	"net/url"
 	"strings"
 	"time"
@@ -60,4 +61,18 @@ func (m Monitor) Validate() error {
 		return &FieldError{Field: "failure_threshold", Message: "thresholds min 1"}
 	}
 	return nil
+}
+
+// StaggerInitialRunAt spreads a new monitor's first run across [now,
+// now+interval) using a deterministic hash of its ID. Monitors created
+// together no longer fire as one synchronized wave; same ID always yields
+// the same offset (reproducible, testable, no RNG state).
+func StaggerInitialRunAt(id string, interval time.Duration, now time.Time) time.Time {
+	if interval <= 0 {
+		return now
+	}
+	h := fnv.New32a()
+	h.Write([]byte(id))
+	offset := time.Duration(h.Sum32() % uint32(interval.Seconds()))
+	return now.Add(offset * time.Second)
 }

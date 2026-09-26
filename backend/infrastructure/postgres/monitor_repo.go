@@ -40,8 +40,8 @@ func scanMonitor(s interface{ Scan(...any) error }) (domain.Monitor, error) {
 
 func (r MonitorRepo) Create(ctx context.Context, m domain.Monitor) error {
 	_, err := r.DB.ExecContext(ctx, `INSERT INTO monitors(id,user_id,name,url,method,interval_seconds,timeout_seconds,failure_threshold,recovery_threshold,next_run_at)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now())`,
-		m.ID, m.UserID, m.Name, m.URL, m.Method, m.IntervalSeconds, m.TimeoutSeconds, m.FailureThreshold, m.RecoveryThreshold)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,COALESCE($10,now()))`,
+		m.ID, m.UserID, m.Name, m.URL, m.Method, m.IntervalSeconds, m.TimeoutSeconds, m.FailureThreshold, m.RecoveryThreshold, nullTime(m.NextRunAt))
 	return err
 }
 

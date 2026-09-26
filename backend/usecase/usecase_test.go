@@ -227,3 +227,24 @@ func TestMonitorPartialUpdateKeepsThresholds(t *testing.T) {
 		t.Fatalf("omitted fields reset: %+v", out)
 	}
 }
+
+func TestMonitorCreateStaggersFirstRun(t *testing.T) {
+	repo := &fakeMonitorRepo{}
+	svc := MonitorService{Monitors: repo}
+	before := time.Now()
+	out, err := svc.Create(context.Background(), "u1", MonitorInput{
+		Name: "S", URL: "https://x.com", IntervalSeconds: 60,
+		TimeoutSeconds: 5, FailureThreshold: 1, RecoveryThreshold: 1,
+	})
+	if err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+	_ = out
+	got := repo.m.NextRunAt
+	if got == nil {
+		t.Fatal("NextRunAt not set on create")
+	}
+	if got.Before(before) || !got.Before(before.Add(60*time.Second)) {
+		t.Fatalf("NextRunAt outside [now, now+interval): %v", got)
+	}
+}
