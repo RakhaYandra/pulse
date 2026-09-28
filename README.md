@@ -173,6 +173,7 @@ Full machine-readable contract: [`pulse-qa/collection.json`](https://github.com/
 | API contract | `npx newman run ../pulse-qa/collection.json --env-var baseUrl=http://localhost:8080` | 22/22 |
 | E2E (black-box) | `npm test --prefix e2e` (in `pulse-web`) | 7/7 |
 | Engine | register → 404 monitor → OPEN → fix URL → RESOLVED | verified live |
+| Telegram | OPEN + RESOLVED delivered to real chat 2026-09-28 (screenshot verified) | verified live |
 
 ## Benchmark (measured, [`docs/BENCHMARK.md`](https://github.com/RakhaYandra/pulse-docs/blob/main/BENCHMARK.md))
 
