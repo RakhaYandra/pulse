@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -153,8 +154,18 @@ func main() {
 			port = "8080"
 		}
 		log_.Info("pulse api listening on :" + port)
-		if err := r.Run(":" + port); err != nil {
-			log.Fatal(err)
+		srv := &http.Server{Addr: ":" + port, Handler: r}
+		go func() {
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log_.Error("api server failed", "err", err)
+			}
+		}()
+		<-ctx.Done()
+		log_.Info("pulse api shutting down")
+		shutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutCtx); err != nil {
+			log_.Error("api shutdown failed", "err", err)
 		}
 	}
 }
