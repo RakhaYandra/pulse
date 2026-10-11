@@ -1,0 +1,40 @@
+# Trial: tora manages api/worker/scheduler. Postgres+Redis are EXTERNAL
+# (pulse-ops compose, host ports 5433/6380) so no depends_on here.
+# Secrets (DATABASE_URL, REDIS_ADDR, JWT_SECRET) come from the parent
+# environment, never this file.
+version: 1
+
+project:
+  name: pulse
+
+runtime:
+  startup_timeout: 30s
+  shutdown_timeout: 10s
+  log_dir: .tora/logs
+  state_dir: .tora
+
+services:
+  api:
+    command: ["go", "run", "./cmd/pulse", "-mode", "api"]
+    working_dir: backend
+    env:
+      APP_ENV: development
+      PORT: "8080"
+      METRICS_PORT: "9100"
+    restart: "no"
+
+  worker:
+    command: ["go", "run", "./cmd/pulse", "-mode", "worker"]
+    working_dir: backend
+    env:
+      APP_ENV: development
+      METRICS_PORT: "9101"
+    restart: "on-failure"
+
+  scheduler:
+    command: ["go", "run", "./cmd/pulse", "-mode", "scheduler"]
+    working_dir: backend
+    env:
+      APP_ENV: development
+      METRICS_PORT: "9102"
+    restart: "on-failure"
